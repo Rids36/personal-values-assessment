@@ -1186,10 +1186,10 @@
     {id:'v072',name:'Risk-Taking',            desc:'Acting despite uncertainty or possible loss.'},
     {id:'v073',name:'Seeing Results',         desc:'Wanting visible evidence that effort is making a difference.'},
     {id:'v074',name:'Striving',               desc:'Pushing yourself toward a stronger outcome.'},
-    {id:'v075',name:'Success',                desc:'Achieving the outcome that matters to you.'},
+    {id:'v075',name:'Success',                desc:'Experiencing a sense of accomplishment in reaching outcomes that matter to you.'},
     {id:'v076',name:'Autonomy',               desc:'Having room to choose your own approach.'},
     {id:'v077',name:'Comfort',                desc:'Valuing ease, relief, and emotional safety.'},
-    {id:'v078',name:'Consistency',            desc:'Preferring things to stay steady and predictable.'},
+    {id:'v078',name:'Consistency',            desc:'Maintaining dependable standards and behaviours over time.'},
     {id:'v079',name:'Environment',            desc:'Caring about the condition and feel of your surroundings.'},
     {id:'v080',name:'Freedom',                desc:'Having fewer constraints on how you live and decide.'},
     {id:'v081',name:'Independence',           desc:'Being able to stand on your own and not depend heavily on others.'},
@@ -1209,7 +1209,7 @@
     {id:'v095',name:'Travel / Adventure',     desc:'Seeking movement, novelty, and expanded experience.'},
     {id:'v096',name:'Variety',                desc:'Wanting change, diversity, and different experiences.'},
     {id:'v097',name:'Wealth',                 desc:'Building lasting financial strength and abundance.'},
-    {id:'v098',name:'Wellbeing',              desc:'Protecting overall health, energy, and balance in life.'},
+    {id:'v098',name:'Wellbeing',              desc:'Nurturing your overall quality of life and sense of personal fulfilment.'},
     {id:'v099',name:'Wisdom',                 desc:'Applying insight, judgement, and perspective well.'},
     {id:'v100',name:'Work / Life Harmony',    desc:'Integrating responsibilities in a way that feels sustainable.'}
   ];
@@ -1227,7 +1227,7 @@
   function gv(id) { return VALUES.find(v => v.id === id); }
 
   function getCategory(id) {
-    if (!id || id.startsWith('flex_')) return 'My Flex Values';
+    if (!id || id.startsWith('flex_')) return 'My Added Values';
     const num = parseInt(id.replace('v',''), 10);
     if (num <= 25) return 'Inner Compass';
     if (num <= 50) return 'People and Connection';
@@ -1235,7 +1235,7 @@
     return 'External Orientation';
   }
 
-  const CATEGORY_ORDER = ['Inner Compass', 'People and Connection', 'Achievement and Growth', 'External Orientation', 'My Flex Values'];
+  const CATEGORY_ORDER = ['Inner Compass', 'People and Connection', 'Achievement and Growth', 'External Orientation', 'My Added Values'];
   function save() { try { localStorage.setItem(STORAGE_KEY, JSON.stringify(S)); } catch(e) {} }
   function load() { try { const r = localStorage.getItem(STORAGE_KEY); return r ? JSON.parse(r) : null; } catch(e) { return null; } }
 
@@ -1586,17 +1586,17 @@
 
           <div style="margin-top:14px;">
             ${!flexUnlocked ? `
-              <p class="cs-muted">You can add up to 2 Flex Values once fewer than 50 values remain in this pass. (${S.passQueue.length} remaining now.)</p>
+              <p class="cs-muted">You can add up to 2 of your own values if something important to you is missing from the 100 listed values. This option becomes available once fewer than 50 cards remain in this pass. (${S.passQueue.length} remaining now.)</p>
             ` : canAddFlex ? `
-              <button class="btn-outline" style="font-size:12px;" onclick="toggleAddValue()">+ Add a Flex Value</button>
+              <button class="btn-outline" style="font-size:12px;" onclick="toggleAddValue()">+ Add Your Own Value</button>
               ${flexCount > 0 ? '<span class="cs-muted" style="margin-left:12px;">' + flexCount + ' of 2 added</span>' : ''}
             ` : `
-              <p class="cs-muted">Both Flex Values added: ${(S.customValues || []).map(cv => '<strong>' + cv.name + '</strong>').join(' and ')}.</p>
+              <p class="cs-muted">Both additional values added: ${(S.customValues || []).map(cv => '<strong>' + cv.name + '</strong>').join(' and ')}.</p>
             `}
 
             <div id="addValueForm" style="display:none; margin-top:10px;">
               <div class="cs-add-value-form">
-                <h4>Add a Flex Value</h4>
+                <h4>Add Your Own Value</h4>
                 <p style="font-family:'Trebuchet MS',Arial,sans-serif;font-size:13px;color:var(--text-muted);margin-bottom:12px;">Add a value you feel is missing from the list. It will appear in your sort shortly.</p>
                 <input type="text" id="customValueName" placeholder="Value name (eg. Family, Creativity, Adventure...)" maxlength="40" />
                 <input type="text" id="customValueDesc" placeholder="What this value means to you (optional)" maxlength="100" />
@@ -1624,6 +1624,10 @@
     const name = (nameEl ? nameEl.value : '').trim();
     const desc = (descEl ? descEl.value : '').trim() || 'A value that matters deeply to me.';
     if (!name) { alert('Please enter a value name.'); return; }
+    if (VALUES.some(v => v.name.trim().toLowerCase() === name.toLowerCase())) {
+      alert('This value is already in the assessment. Please use its existing card or enter a different value.');
+      return;
+    }
     if (!S.customValues) S.customValues = [];
     if (S.customValues.length >= 2) return;
     const id = 'flex_' + Date.now();
@@ -2393,6 +2397,11 @@
       // Patch fields added in later versions that may be missing from saved state
       if (!S.removedThisPass) S.removedThisPass = [];
       if (S.lastDecision === undefined) S.lastDecision = null;
+      // Restore custom values into the lookup after reopening the assessment.
+      // These are stored in browser progress but not in the original 100-value list.
+      (S.customValues || []).forEach(cv => {
+        if (!VALUES.some(v => v.id === cv.id)) VALUES.push({ ...cv, custom: true });
+      });
     } else {
       initState();
     }
